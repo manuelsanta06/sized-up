@@ -1,55 +1,58 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
+import '../core/database/database_service.dart';
 import '../features/calendar/presentation/calendar_page.dart';
 import '../features/notes/presentation/notes_page.dart';
 import '../features/people/presentation/people_page.dart';
 import 'app_section.dart';
 import 'quick_action.dart';
 
-class AppShell extends StatefulWidget{
-  const AppShell({super.key});
+class AppShell extends StatefulWidget {
+  const AppShell({required this.database, super.key});
+
+  final DatabaseService database;
 
   @override
-  State<AppShell> createState()=>_AppShellState();
+  State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell>{
-  int _selectedIndex=1;
-  bool _isNavigationBarVisible=true;
+class _AppShellState extends State<AppShell> {
+  int _selectedIndex = 1;
+  bool _isNavigationBarVisible = true;
   AppSection? _quickMenuSection;
-  List<QuickAction> _quickActions=const[];
-  List<GlobalKey> _quickActionKeys=const[];
+  List<QuickAction> _quickActions = const [];
+  List<GlobalKey> _quickActionKeys = const [];
   int? _hoveredActionIndex;
-  bool _quickMenuDragActive=false;
+  bool _quickMenuDragActive = false;
 
-  final List<Widget> _pages=const [CalendarPage(),NotesPage(),PeoplePage()];
+  final List<Widget> _pages = const [CalendarPage(), NotesPage(), PeoplePage()];
 
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     return Stack(
-      children:[
+      children: [
         Scaffold(
-          extendBody:true,
-          body:NotificationListener<UserScrollNotification>(
-            onNotification:_handleScrollNotification,
-            child:IndexedStack(index:_selectedIndex,children:_pages),
+          extendBody: true,
+          body: NotificationListener<UserScrollNotification>(
+            onNotification: _handleScrollNotification,
+            child: IndexedStack(index: _selectedIndex, children: _pages),
           ),
-          bottomNavigationBar:_buildNavigationBar(context),
+          bottomNavigationBar: _buildNavigationBar(context),
         ),
-        if(_quickMenuSection!=null)
+        if (_quickMenuSection != null)
           Positioned(
-            left:20,
-            right:20,
-            bottom:MediaQuery.paddingOf(context).bottom+96,
-            child:IgnorePointer(
-              ignoring:_quickMenuDragActive,
-              child:_QuickActionMenu(
-                section:_quickMenuSection!,
-                actions:_quickActions,
-                actionKeys:_quickActionKeys,
-                hoveredActionIndex:_hoveredActionIndex,
-                onActionTap:_selectQuickAction,
+            left: 20,
+            right: 20,
+            bottom: MediaQuery.paddingOf(context).bottom + 96,
+            child: IgnorePointer(
+              ignoring: _quickMenuDragActive,
+              child: _QuickActionMenu(
+                section: _quickMenuSection!,
+                actions: _quickActions,
+                actionKeys: _quickActionKeys,
+                hoveredActionIndex: _hoveredActionIndex,
+                onActionTap: _selectQuickAction,
               ),
             ),
           ),
@@ -57,49 +60,51 @@ class _AppShellState extends State<AppShell>{
     );
   }
 
-  bool _handleScrollNotification(UserScrollNotification notification){
-    if(notification.direction==ScrollDirection.reverse&&_isNavigationBarVisible){
-      setState(()=>_isNavigationBarVisible=false);
-    }else if(notification.direction==ScrollDirection.forward&&!_isNavigationBarVisible){
-      setState(()=>_isNavigationBarVisible=true);
+  bool _handleScrollNotification(UserScrollNotification notification) {
+    if (notification.direction == ScrollDirection.reverse &&
+        _isNavigationBarVisible) {
+      setState(() => _isNavigationBarVisible = false);
+    } else if (notification.direction == ScrollDirection.forward &&
+        !_isNavigationBarVisible) {
+      setState(() => _isNavigationBarVisible = true);
     }
     return false;
   }
 
-  Widget _buildNavigationBar(BuildContext context){
-    final colorScheme=Theme.of(context).colorScheme;
+  Widget _buildNavigationBar(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
 
     return SafeArea(
-      minimum:const EdgeInsets.fromLTRB(20, 0, 20, 12),
-      child:AnimatedSlide(
-        offset:_isNavigationBarVisible ? Offset.zero :const Offset(0, 2),
-        duration:const Duration(milliseconds:220),
-        curve:Curves.easeOutCubic,
-        child:AnimatedOpacity(
-          opacity:_isNavigationBarVisible ? 1 :0,
-          duration:const Duration(milliseconds:160),
-          child:Material(
-            color:colorScheme.surfaceContainerHigh,
-            elevation:3,
-            shadowColor:colorScheme.shadow,
-            borderRadius:BorderRadius.circular(28),
-            clipBehavior:Clip.antiAlias,
-            child:Padding(
-              padding:const EdgeInsets.symmetric(horizontal:8, vertical:8),
-              child:Row(
-                children:[
+      minimum: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      child: AnimatedSlide(
+        offset: _isNavigationBarVisible ? Offset.zero : const Offset(0, 2),
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        child: AnimatedOpacity(
+          opacity: _isNavigationBarVisible ? 1 : 0,
+          duration: const Duration(milliseconds: 160),
+          child: Material(
+            color: colorScheme.surfaceContainerHigh,
+            elevation: 3,
+            shadowColor: colorScheme.shadow,
+            borderRadius: BorderRadius.circular(28),
+            clipBehavior: Clip.antiAlias,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: Row(
+                children: [
                   for (final section in AppSection.values)
                     Expanded(
-                      child:_NavigationDestination(
-                        section:section,
-                        selected:section.index == _selectedIndex,
-                        onTap:() => _selectSection(section),
-                        onLongPressStart:(details) =>
+                      child: _NavigationDestination(
+                        section: section,
+                        selected: section.index == _selectedIndex,
+                        onTap: () => _selectSection(section),
+                        onLongPressStart: (details) =>
                             _beginQuickActions(section, details.globalPosition),
-                        onLongPressMoveUpdate:(details) =>
+                        onLongPressMoveUpdate: (details) =>
                             _updateHoveredAction(details.globalPosition),
-                        onLongPressEnd:(details) => _finishQuickActions(),
-                        onLongPressCancel:_closeQuickActions,
+                        onLongPressEnd: (details) => _finishQuickActions(),
+                        onLongPressCancel: _closeQuickActions,
                       ),
                     ),
                 ],
@@ -111,128 +116,128 @@ class _AppShellState extends State<AppShell>{
     );
   }
 
-  void _selectSection(AppSection section){
-    if (section.index == _selectedIndex){
+  void _selectSection(AppSection section) {
+    if (section.index == _selectedIndex) {
       _openQuickActions(section);
       return;
     }
-    setState((){
-      _selectedIndex=section.index;
-      _isNavigationBarVisible=true;
+    setState(() {
+      _selectedIndex = section.index;
+      _isNavigationBarVisible = true;
     });
   }
 
-  void _openQuickActions(AppSection section){
-    setState((){
-      _quickMenuSection=section;
-      _quickActions=_actionsFor(section);
-      _quickActionKeys=List.generate(
+  void _openQuickActions(AppSection section) {
+    setState(() {
+      _quickMenuSection = section;
+      _quickActions = _actionsFor(section);
+      _quickActionKeys = List.generate(
         _quickActions.length,
         (_) => GlobalKey(),
       );
-      _hoveredActionIndex=null;
-      _quickMenuDragActive=false;
+      _hoveredActionIndex = null;
+      _quickMenuDragActive = false;
     });
   }
 
-  void _beginQuickActions(AppSection section, Offset globalPosition){
-    setState((){
-      _selectedIndex=section.index;
-      _isNavigationBarVisible=true;
-      _quickMenuSection=section;
-      _quickActions=_actionsFor(section);
-      _quickActionKeys=List.generate(
+  void _beginQuickActions(AppSection section, Offset globalPosition) {
+    setState(() {
+      _selectedIndex = section.index;
+      _isNavigationBarVisible = true;
+      _quickMenuSection = section;
+      _quickActions = _actionsFor(section);
+      _quickActionKeys = List.generate(
         _quickActions.length,
         (_) => GlobalKey(),
       );
-      _hoveredActionIndex=null;
-      _quickMenuDragActive=true;
+      _hoveredActionIndex = null;
+      _quickMenuDragActive = true;
     });
     _updateHoveredAction(globalPosition);
   }
 
-  void _updateHoveredAction(Offset globalPosition){
+  void _updateHoveredAction(Offset globalPosition) {
     if (!_quickMenuDragActive) return;
     int? nextHoveredIndex;
-    for (var index=0; index < _quickActionKeys.length; index++){
-      final renderObject=_quickActionKeys[index].currentContext
+    for (var index = 0; index < _quickActionKeys.length; index++) {
+      final renderObject = _quickActionKeys[index].currentContext
           ?.findRenderObject();
       if (renderObject is! RenderBox) continue;
-      final localPosition=renderObject.globalToLocal(globalPosition);
-      if ((Offset.zero & renderObject.size).contains(localPosition)){
-        nextHoveredIndex=index;
+      final localPosition = renderObject.globalToLocal(globalPosition);
+      if ((Offset.zero & renderObject.size).contains(localPosition)) {
+        nextHoveredIndex = index;
         break;
       }
     }
-    if (nextHoveredIndex != _hoveredActionIndex && mounted){
-      setState(() => _hoveredActionIndex=nextHoveredIndex);
+    if (nextHoveredIndex != _hoveredActionIndex && mounted) {
+      setState(() => _hoveredActionIndex = nextHoveredIndex);
     }
   }
 
-  void _finishQuickActions(){
-    if (_hoveredActionIndex != null){
+  void _finishQuickActions() {
+    if (_hoveredActionIndex != null) {
       _selectQuickAction(_hoveredActionIndex!);
-    }else{
+    } else {
       _closeQuickActions();
     }
   }
 
-  void _selectQuickAction(int index){
+  void _selectQuickAction(int index) {
     _closeQuickActions();
   }
 
-  void _closeQuickActions(){
+  void _closeQuickActions() {
     if (!mounted) return;
-    setState((){
-      _quickMenuSection=null;
-      _quickActions=const [];
-      _quickActionKeys=const [];
-      _hoveredActionIndex=null;
-      _quickMenuDragActive=false;
+    setState(() {
+      _quickMenuSection = null;
+      _quickActions = const [];
+      _quickActionKeys = const [];
+      _hoveredActionIndex = null;
+      _quickMenuDragActive = false;
     });
   }
 
-  List<QuickAction> _actionsFor(AppSection section) => switch (section){
+  List<QuickAction> _actionsFor(AppSection section) => switch (section) {
     AppSection.calendar => const [
       QuickAction(
-        label:'Create event',
-        description:'Add something to your calendar.',
-        icon:Icons.event_outlined,
+        label: 'Create event',
+        description: 'Add something to your calendar.',
+        icon: Icons.event_outlined,
       ),
       QuickAction(
-        label:'Plan a day',
-        description:'Set up a focused plan.',
-        icon:Icons.today_outlined,
+        label: 'Plan a day',
+        description: 'Set up a focused plan.',
+        icon: Icons.today_outlined,
       ),
     ],
     AppSection.notes => const [
       QuickAction(
-        label:'Create note',
-        description:'Start writing something new.',
-        icon:Icons.note_add_outlined,
+        label: 'Create note',
+        description: 'Start writing something new.',
+        icon: Icons.note_add_outlined,
       ),
       QuickAction(
-        label:'Create list',
-        description:'Turn an idea into a checklist.',
-        icon:Icons.playlist_add,
+        label: 'Create list',
+        description: 'Turn an idea into a checklist.',
+        icon: Icons.playlist_add,
       ),
     ],
     AppSection.people => const [
       QuickAction(
-        label:'Add person',
-        description:'Save someone important to you.',
-        icon:Icons.person_add_alt_1,
+        label: 'Add person',
+        description: 'Save someone important to you.',
+        icon: Icons.person_add_alt_1,
       ),
       QuickAction(
-        label:'Log interaction',
-        description:'Remember a recent conversation.',
-        icon:Icons.forum_outlined,
+        label: 'Log interaction',
+        description: 'Remember a recent conversation.',
+        icon: Icons.forum_outlined,
       ),
     ],
   };
 }
 
-class _NavigationDestination extends StatelessWidget{
+class _NavigationDestination extends StatelessWidget {
   const _NavigationDestination({
     required this.section,
     required this.selected,
@@ -252,44 +257,44 @@ class _NavigationDestination extends StatelessWidget{
   final VoidCallback onLongPressCancel;
 
   @override
-  Widget build(BuildContext context){
-    final colorScheme=Theme.of(context).colorScheme;
-    final foregroundColor=selected
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final foregroundColor = selected
         ? colorScheme.onSecondaryContainer
-        :colorScheme.onSurfaceVariant;
+        : colorScheme.onSurfaceVariant;
 
     return Tooltip(
-      message:'Open ${section.title}actions',
-      child:GestureDetector(
-        behavior:HitTestBehavior.opaque,
-        onLongPressStart:onLongPressStart,
-        onLongPressMoveUpdate:onLongPressMoveUpdate,
-        onLongPressEnd:onLongPressEnd,
-        onLongPressCancel:onLongPressCancel,
-        child:AnimatedContainer(
-          duration:const Duration(milliseconds:180),
-          curve:Curves.easeOut,
-          padding:const EdgeInsets.symmetric(vertical:7),
-          decoration:BoxDecoration(
-            color:selected ? colorScheme.secondaryContainer :null,
-            borderRadius:BorderRadius.circular(20),
+      message: 'Open ${section.title}actions',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onLongPressStart: onLongPressStart,
+        onLongPressMoveUpdate: onLongPressMoveUpdate,
+        onLongPressEnd: onLongPressEnd,
+        onLongPressCancel: onLongPressCancel,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(vertical: 7),
+          decoration: BoxDecoration(
+            color: selected ? colorScheme.secondaryContainer : null,
+            borderRadius: BorderRadius.circular(20),
           ),
-          child:InkWell(
-            onTap:onTap,
-            borderRadius:BorderRadius.circular(20),
-            child:Column(
-              mainAxisSize:MainAxisSize.min,
-              children:[
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 Icon(
-                  selected?section.selectedIcon :section.icon,
-                  color:foregroundColor,
+                  selected ? section.selectedIcon : section.icon,
+                  color: foregroundColor,
                 ),
-                const SizedBox(height:2),
+                const SizedBox(height: 2),
                 Text(
                   section.title,
-                  style:Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color:foregroundColor,
-                    fontWeight:selected?FontWeight.w700:null,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: foregroundColor,
+                    fontWeight: selected ? FontWeight.w700 : null,
                   ),
                 ),
               ],
@@ -301,7 +306,7 @@ class _NavigationDestination extends StatelessWidget{
   }
 }
 
-class _QuickActionMenu extends StatelessWidget{
+class _QuickActionMenu extends StatelessWidget {
   const _QuickActionMenu({
     required this.section,
     required this.actions,
@@ -317,25 +322,27 @@ class _QuickActionMenu extends StatelessWidget{
   final ValueChanged<int> onActionTap;
 
   @override
-  Widget build(BuildContext context){
-    final colorScheme=Theme.of(context).colorScheme;
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Material(
-      color:colorScheme.surfaceContainerHigh,
-      elevation:8,
-      shadowColor:colorScheme.shadow,
-      borderRadius:BorderRadius.circular(28),
-      child:Padding(
-        padding:const EdgeInsets.all(10),
-        child:Row(
-          children:[
-            for(var index=0;index<actions.length;index++)
-              Expanded(child:_QuickActionTile(
-                key:actionKeys[index],
-                action:actions[index],
-                selected:hoveredActionIndex==index,
-                onTap:()=>onActionTap(index),
-              )),
+      color: colorScheme.surfaceContainerHigh,
+      elevation: 8,
+      shadowColor: colorScheme.shadow,
+      borderRadius: BorderRadius.circular(28),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Row(
+          children: [
+            for (var index = 0; index < actions.length; index++)
+              Expanded(
+                child: _QuickActionTile(
+                  key: actionKeys[index],
+                  action: actions[index],
+                  selected: hoveredActionIndex == index,
+                  onTap: () => onActionTap(index),
+                ),
+              ),
           ],
         ),
       ),
@@ -343,7 +350,7 @@ class _QuickActionMenu extends StatelessWidget{
   }
 }
 
-class _QuickActionTile extends StatelessWidget{
+class _QuickActionTile extends StatelessWidget {
   const _QuickActionTile({
     required this.action,
     required this.selected,
@@ -356,33 +363,35 @@ class _QuickActionTile extends StatelessWidget{
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context){
-    final colorScheme=Theme.of(context).colorScheme;
-    final foregroundColor=selected?colorScheme.onPrimaryContainer:colorScheme.onSurface;
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final foregroundColor = selected
+        ? colorScheme.onPrimaryContainer
+        : colorScheme.onSurface;
 
     return InkWell(
-      onTap:onTap,
-      borderRadius:BorderRadius.circular(20),
-      child:AnimatedContainer(
-        duration:const Duration(milliseconds:120),
-        padding:const EdgeInsets.symmetric(horizontal:8,vertical:12),
-        decoration:BoxDecoration(
-          color:selected?colorScheme.primaryContainer:null,
-          borderRadius:BorderRadius.circular(20),
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected ? colorScheme.primaryContainer : null,
+          borderRadius: BorderRadius.circular(20),
         ),
-        child:Column(
-          mainAxisSize:MainAxisSize.min,
-          children:[
-            Icon(action.icon, color:foregroundColor),
-            const SizedBox(height:6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(action.icon, color: foregroundColor),
+            const SizedBox(height: 6),
             Text(
               action.label,
-              textAlign:TextAlign.center,
-              maxLines:1,
-              overflow:TextOverflow.ellipsis,
-              style:Theme.of(context).textTheme.labelMedium?.copyWith(
-                color:foregroundColor,
-                fontWeight:FontWeight.w700,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: foregroundColor,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],

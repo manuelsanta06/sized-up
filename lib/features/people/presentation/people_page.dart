@@ -4,5 +4,5 @@ class PeoplePage extends StatelessWidget {
   const PeoplePage({super.key});
 
   @override
-  Widget build(BuildContext context)=>const SizedBox.shrink();
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
