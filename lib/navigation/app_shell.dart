@@ -104,7 +104,16 @@ class _AppShellState extends State<AppShell> {
                         onLongPressMoveUpdate: (details) =>
                             _updateHoveredAction(details.globalPosition),
                         onLongPressEnd: (details) => _finishQuickActions(),
-                        onLongPressCancel: _closeQuickActions,
+                        onLongPressCancel: _handleLongPressCancel,
+                        onVerticalDragUpdate: (details) => _handleVerticalDrag(
+                          section,
+                          details.globalPosition,
+                          details.primaryDelta ?? 0,
+                        ),
+                        onVerticalDragEnd: (details) {
+                          if (_quickMenuDragActive) _finishQuickActions();
+                        },
+                        onVerticalDragCancel: _closeQuickActions,
                       ),
                     ),
                 ],
@@ -154,6 +163,24 @@ class _AppShellState extends State<AppShell> {
       _quickMenuDragActive = true;
     });
     _updateHoveredAction(globalPosition);
+  }
+
+  void _handleVerticalDrag(
+    AppSection section,
+    Offset globalPosition,
+    double primaryDelta,
+  ) {
+    if (!_quickMenuDragActive) {
+      if (primaryDelta < 0) {
+        _beginQuickActions(section, globalPosition);
+      }
+      return;
+    }
+    _updateHoveredAction(globalPosition);
+  }
+
+  void _handleLongPressCancel() {
+    if (!_quickMenuDragActive) _closeQuickActions();
   }
 
   void _updateHoveredAction(Offset globalPosition) {
@@ -246,6 +273,9 @@ class _NavigationDestination extends StatelessWidget {
     required this.onLongPressMoveUpdate,
     required this.onLongPressEnd,
     required this.onLongPressCancel,
+    required this.onVerticalDragUpdate,
+    required this.onVerticalDragEnd,
+    required this.onVerticalDragCancel,
   });
 
   final AppSection section;
@@ -255,6 +285,9 @@ class _NavigationDestination extends StatelessWidget {
   final GestureLongPressMoveUpdateCallback onLongPressMoveUpdate;
   final GestureLongPressEndCallback onLongPressEnd;
   final VoidCallback onLongPressCancel;
+  final GestureDragUpdateCallback onVerticalDragUpdate;
+  final GestureDragEndCallback onVerticalDragEnd;
+  final VoidCallback onVerticalDragCancel;
 
   @override
   Widget build(BuildContext context) {
@@ -264,13 +297,16 @@ class _NavigationDestination extends StatelessWidget {
         : colorScheme.onSurfaceVariant;
 
     return Tooltip(
-      message: 'Open ${section.title}actions',
+      message: 'Open ${section.title} actions',
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onLongPressStart: onLongPressStart,
         onLongPressMoveUpdate: onLongPressMoveUpdate,
         onLongPressEnd: onLongPressEnd,
         onLongPressCancel: onLongPressCancel,
+        onVerticalDragUpdate: onVerticalDragUpdate,
+        onVerticalDragEnd: onVerticalDragEnd,
+        onVerticalDragCancel: onVerticalDragCancel,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOut,

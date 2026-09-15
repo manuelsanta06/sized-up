@@ -7,8 +7,8 @@ part 'person.g.dart';
 class Person {
   Id id = Isar.autoIncrement;
 
-  @Index(unique:true)
-  String syncId=const Uuid().v4();
+  @Index(unique: true)
+  String syncId = const Uuid().v4();
 
   @Index()
   String name = '';
@@ -16,6 +16,7 @@ class Person {
   String? email;
   String? phone;
   String? notes;
+  DateTime? birth;
   DateTime createdAt = DateTime.now();
   DateTime updatedAt = DateTime.now();
 }
