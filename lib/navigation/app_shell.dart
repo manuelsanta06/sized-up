@@ -5,6 +5,7 @@ import '../core/database/database_service.dart';
 import '../features/calendar/presentation/calendar_page.dart';
 import '../features/notes/presentation/notes_page.dart';
 import '../features/people/presentation/people_page.dart';
+import '../features/settings/presentation/settings_page.dart';
 import 'app_section.dart';
 import 'quick_action.dart';
 
@@ -34,6 +35,17 @@ class _AppShellState extends State<AppShell> {
       children: [
         Scaffold(
           extendBody: true,
+          appBar: AppBar(
+            title: Text(AppSection.values[_selectedIndex].title),
+            actions: [
+              IconButton(
+                tooltip: 'Account and settings',
+                onPressed: _openSettings,
+                icon: const Icon(Icons.account_circle_outlined),
+              ),
+              const SizedBox(width: 8),
+            ],
+          ),
           body: NotificationListener<UserScrollNotification>(
             onNotification: _handleScrollNotification,
             child: IndexedStack(index: _selectedIndex, children: _pages),
@@ -134,6 +146,12 @@ class _AppShellState extends State<AppShell> {
       _selectedIndex = section.index;
       _isNavigationBarVisible = true;
     });
+  }
+
+  void _openSettings() {
+    _closeQuickActions();
+    Navigator.of(context)
+        .push(MaterialPageRoute<void>(builder: (_) => const SettingsPage()));
   }
 
   void _openQuickActions(AppSection section) {
