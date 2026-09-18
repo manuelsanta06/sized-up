@@ -5,7 +5,7 @@ import '../../features/calendar/data/models/calendar_event.dart';
 import '../../features/notes/data/models/note.dart';
 import '../../features/people/data/models/person.dart';
 
-class DatabaseService {
+class DatabaseService{
   Isar? _isar;
   Future<Isar>? _opening;
 

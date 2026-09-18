@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../core/database/database_service.dart';
 import '../navigation/app_shell.dart';
 import 'theme/app_theme.dart';
 
 class ScrApp extends StatelessWidget {
-  const ScrApp({required this.database, super.key});
-
-  final DatabaseService database;
+  const ScrApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +14,7 @@ class ScrApp extends StatelessWidget {
       theme: AppTheme.dark,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.dark,
-      home: AppShell(database: database),
+      home: const AppShell(),
     );
   }
 }

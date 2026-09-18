@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
-import '../core/database/database_service.dart';
 import '../features/calendar/presentation/calendar_page.dart';
 import '../features/notes/presentation/notes_page.dart';
 import '../features/people/presentation/people_page.dart';
@@ -10,9 +9,7 @@ import 'app_section.dart';
 import 'quick_action.dart';
 
 class AppShell extends StatefulWidget {
-  const AppShell({required this.database, super.key});
-
-  final DatabaseService database;
+  const AppShell({super.key});
 
   @override
   State<AppShell> createState() => _AppShellState();
