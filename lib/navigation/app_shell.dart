@@ -5,6 +5,7 @@ import '../features/calendar/presentation/calendar_page.dart';
 import '../features/notes/presentation/notes_page.dart';
 import '../features/people/presentation/people_page.dart';
 import '../features/settings/presentation/settings_page.dart';
+import '../features/notes/presentation/note_editor_page.dart';
 import 'app_section.dart';
 import 'quick_action.dart';
 
@@ -225,7 +226,11 @@ class _AppShellState extends State<AppShell> {
   }
 
   void _selectQuickAction(int index) {
+    final section = _quickMenuSection;
     _closeQuickActions();
+    if(section == AppSection.notes && index == 0){
+      Navigator.of(context).push(MaterialPageRoute<void>(builder:(_)=>const NoteEditorPage()));
+    }
   }
 
   void _closeQuickActions() {
