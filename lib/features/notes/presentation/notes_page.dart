@@ -76,12 +76,25 @@ class _NoteCard extends StatelessWidget{
     final accentColor=noteColorFromValue(note.colorValue);
     return Card(
       color:Color.alphaBlend(accentColor.withValues(alpha:.18),colorScheme.surfaceContainerHigh),
+      clipBehavior:Clip.hardEdge,
       child:ListTile(
         onTap:onTap,
         contentPadding:const EdgeInsets.symmetric(horizontal:18,vertical:8),
-        leading:Container(width:12,height:48,decoration:BoxDecoration(color:accentColor,borderRadius:BorderRadius.circular(8))),
+        leading:Container(
+          width:12,
+          height:48,
+          decoration:BoxDecoration(
+            color:accentColor,
+            borderRadius:BorderRadius.circular(8)
+          )
+        ),
         title:Text(note.title),
-        subtitle:Padding(padding:const EdgeInsets.only(top:4),child:Text(note.content.isEmpty?'No content':note.content,maxLines:2,overflow:TextOverflow.ellipsis)),
+        subtitle:Padding(
+          padding:const EdgeInsets.only(top:4),
+          child:Text(note.content.isEmpty?'No content':note.content,
+          maxLines:2,
+          overflow:TextOverflow.ellipsis)
+        ),
         trailing:const Icon(Icons.chevron_right),
       ),
     );
@@ -93,5 +106,9 @@ class _NotesError extends StatelessWidget{
   final String message;
   final VoidCallback onRetry;
   @override
-  Widget build(BuildContext context)=>Center(child:FilledButton.tonalIcon(onPressed:onRetry,icon:const Icon(Icons.refresh),label:Text(message)));
+  Widget build(BuildContext context)=>Center(child:FilledButton.tonalIcon(
+    onPressed:onRetry,
+    icon:const Icon(Icons.refresh),
+    label:Text(message)
+  ));
 }
