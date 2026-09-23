@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flex_color_picker/flex_color_picker.dart';
 
 import '../application/note_providers.dart';
 import '../data/models/note.dart';
@@ -91,7 +92,11 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage>{
               const SizedBox(height:28),
               const _SectionLabel(label:'Color'),
               const SizedBox(height:12),
-              _NoteColorSelector(selectedValue:_selectedColorValue,onSelected:(value)=>setState(()=>_selectedColorValue=value)),
+              _NoteColorSelector(
+                selectedValue:_selectedColorValue,
+                onSelected:(value)=>setState(()=>_selectedColorValue=value),
+                onCustomSelected:_selectCustomColor,
+              ),
               const SizedBox(height:20),
               _LastEditedLabel(date:widget.note?.updatedAt),
             ],
@@ -113,6 +118,27 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage>{
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('The note could not be saved.')));
+  }
+  Future<void> _selectCustomColor()async{
+    final color=await showColorPickerDialog(
+      context,
+      noteColorFromValue(_selectedColorValue),
+      title:const Text('Custom color'),
+      pickersEnabled:const <ColorPickerType,bool>{
+        ColorPickerType.both:false,
+        ColorPickerType.primary:false,
+        ColorPickerType.accent:false,
+        ColorPickerType.bw:false,
+        ColorPickerType.custom:false,
+        ColorPickerType.wheel:true,
+      },
+      enableOpacity:false,
+      showColorCode:true,
+      wheelDiameter:200,
+      actionButtons:const ColorPickerActionButtons(dialogActionButtons:true),
+    );
+    if(!mounted)return;
+    setState(()=>_selectedColorValue=color.toARGB32());
   }
 }
 
@@ -147,21 +173,38 @@ class _ComingSoonChip extends StatelessWidget{
 }
 
 class _NoteColorSelector extends StatelessWidget{
-  const _NoteColorSelector({required this.selectedValue,required this.onSelected});
+  const _NoteColorSelector({required this.selectedValue,required this.onSelected,required this.onCustomSelected});
   final int selectedValue;
   final ValueChanged<int> onSelected;
+  final Future<void> Function() onCustomSelected;
   @override
-  Widget build(BuildContext context)=>Wrap(spacing:14,runSpacing:14,children:[for(final option in noteColorOptions)_ColorOption(option:option,selected:selectedValue==option.value,onTap:()=>onSelected(option.value))]);
+  Widget build(BuildContext context){
+    final customSelected=!isNotePresetColor(selectedValue);
+    return Wrap(
+      spacing:14,
+      runSpacing:14,
+      children:[
+        for(final option in noteColorOptions)
+          _ColorOption(
+            option:option,
+            customColor:option.isCustom&&customSelected?noteColorFromValue(selectedValue):null,
+            selected:option.isCustom?customSelected:selectedValue==option.value,
+            onTap:option.isCustom?()=>onCustomSelected():()=>onSelected(option.value),
+          ),
+      ],
+    );
+  }
 }
 
 class _ColorOption extends StatelessWidget{
-  const _ColorOption({required this.option,required this.selected,required this.onTap});
+  const _ColorOption({required this.option,required this.customColor,required this.selected,required this.onTap});
   final NoteColorOption option;
+  final Color? customColor;
   final bool selected;
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context){
-    final color=noteColorFromValue(option.value);
+    final color=option.isCustom?customColor:noteColorFromValue(option.value);
     final colorScheme=Theme.of(context).colorScheme;
     return Semantics(
       button:true,
@@ -178,12 +221,12 @@ class _ColorOption extends StatelessWidget{
           decoration:BoxDecoration(shape:BoxShape.circle,border:selected?Border.all(color:colorScheme.onSurface,width:2):null),
           child:DecoratedBox(
             decoration:BoxDecoration(
-              color:option.isCustom?null:color,
-              gradient:option.isCustom?const LinearGradient(colors:
+              color:color,
+              gradient:option.isCustom&&color==null?const LinearGradient(colors:
                 [Color(0xFFF17CFF),Color(0xFF6E8BFF),Color(0xFF6EE7B7),Color(0xFFFFD166)]):null,
               shape:BoxShape.circle,
             ),
-            child:option.isCustom?const Icon(Icons.colorize,size:14):null,
+            child:option.isCustom&&color==null?const Icon(Icons.colorize,size:14):null,
           ),
         ),
       ),

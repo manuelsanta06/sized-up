@@ -17,3 +17,5 @@ const noteColorOptions = [
 ];
 
 Color noteColorFromValue(int value) => Color(value);
+
+bool isNotePresetColor(int value)=>noteColorOptions.any((option)=>!option.isCustom&&option.value==value);
