@@ -1,31 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/calendar/presentation/calendar_page.dart';
-import '../features/notes/presentation/notes_page.dart';
-import '../features/people/presentation/people_page.dart';
 import '../features/settings/presentation/settings_page.dart';
 import '../features/notes/presentation/note_editor_page.dart';
+import '../features/people/presentation/people_page.dart';
+import '../features/notes/presentation/notes_page.dart';
 import 'app_section.dart';
 import 'quick_action.dart';
+import 'search_query_provider.dart';
 
-class AppShell extends StatefulWidget {
+class AppShell extends ConsumerStatefulWidget{
   const AppShell({super.key});
 
   @override
-  State<AppShell> createState() => _AppShellState();
+  ConsumerState<AppShell> createState()=>_AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
-  int _selectedIndex = 1;
-  bool _isNavigationBarVisible = true;
+class _AppShellState extends ConsumerState<AppShell>{
+  int _selectedIndex=1;
+  bool _isNavigationBarVisible=true;
+  bool _isSearchOpen=false;
   AppSection? _quickMenuSection;
-  List<QuickAction> _quickActions = const [];
-  List<GlobalKey> _quickActionKeys = const [];
+  List<QuickAction> _quickActions=const[];
+  List<GlobalKey> _quickActionKeys=const[];
   int? _hoveredActionIndex;
-  bool _quickMenuDragActive = false;
+  bool _quickMenuDragActive=false;
+  final _searchController=TextEditingController();
+  final _searchFocusNode=FocusNode();
 
-  final List<Widget> _pages = const [CalendarPage(), NotesPage(), PeoplePage()];
+  final List<Widget> _pages=const[CalendarPage(),NotesPage(),PeoplePage()];
+
+  AppSection get _selectedSection=>AppSection.values[_selectedIndex];
+
+  @override
+  void dispose(){
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,18 +47,43 @@ class _AppShellState extends State<AppShell> {
       children: [
         Scaffold(
           extendBody: true,
-          appBar: AppBar(
-            title: Text(AppSection.values[_selectedIndex].title),
-            actions: [
-              IconButton(
-                tooltip: 'Account and settings',
-                onPressed: _openSettings,
-                icon: const Icon(Icons.account_circle_outlined),
+          appBar:AppBar(
+            automaticallyImplyLeading:false,
+            leading:IconButton(
+              tooltip:_isSearchOpen?'Close search':'Search',
+              onPressed:_isSearchOpen?_closeSearch:_openSearch,
+              icon:AnimatedSwitcher(
+                duration:const Duration(milliseconds:180),
+                child:Icon(_isSearchOpen?Icons.close:Icons.search,key:ValueKey(_isSearchOpen)),
               ),
-              const SizedBox(width: 8),
+            ),
+            title:AnimatedSwitcher(
+              duration:const Duration(milliseconds:180),
+              transitionBuilder:(child,animation)=>FadeTransition(opacity:animation,child:child),
+              child:_isSearchOpen? TextField(
+                key:const ValueKey('search-field'),
+                controller:_searchController,
+                focusNode:_searchFocusNode,
+                textInputAction:TextInputAction.search,
+                decoration:InputDecoration(
+                  hintText:'Search ${_selectedSection.title.toLowerCase()}',
+                  border:InputBorder.none,
+                  enabledBorder:InputBorder.none,
+                  focusedBorder:InputBorder.none,
+                ),
+                onChanged:(query)=>ref.read(searchQueryProvider(_selectedSection).notifier).update(query),
+              ):Text(_selectedSection.title,key:const ValueKey('section-title')),
+            ),
+            actions:[
+              IconButton(
+                tooltip:'Account and settings',
+                onPressed:_openSettings,
+                icon:const Icon(Icons.account_circle_outlined)
+              ),
+              const SizedBox(width:8),
             ],
           ),
-          body: NotificationListener<UserScrollNotification>(
+          body:NotificationListener<UserScrollNotification>(
             onNotification: _handleScrollNotification,
             child: IndexedStack(index: _selectedIndex, children: _pages),
           ),
@@ -144,6 +183,7 @@ class _AppShellState extends State<AppShell> {
       _selectedIndex = section.index;
       _isNavigationBarVisible = true;
     });
+    _syncSearchQuery(section);
   }
 
   void _openSettings() {
@@ -178,7 +218,29 @@ class _AppShellState extends State<AppShell> {
       _hoveredActionIndex = null;
       _quickMenuDragActive = true;
     });
+    _syncSearchQuery(section);
     _updateHoveredAction(globalPosition);
+  }
+
+  void _openSearch(){
+    _closeQuickActions();
+    final query=ref.read(searchQueryProvider(_selectedSection));
+    _searchController.value=TextEditingValue(text:query,selection:TextSelection.collapsed(offset:query.length));
+    setState(()=>_isSearchOpen=true);
+    WidgetsBinding.instance.addPostFrameCallback((_)=>_searchFocusNode.requestFocus());
+  }
+
+  void _closeSearch(){
+    ref.read(searchQueryProvider(_selectedSection).notifier).clear();
+    _searchController.clear();
+    _searchFocusNode.unfocus();
+    setState(()=>_isSearchOpen=false);
+  }
+
+  void _syncSearchQuery(AppSection section){
+    if(!_isSearchOpen)return;
+    final query=ref.read(searchQueryProvider(section));
+    _searchController.value=TextEditingValue(text:query,selection:TextSelection.collapsed(offset:query.length));
   }
 
   void _handleVerticalDrag(

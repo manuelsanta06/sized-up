@@ -5,32 +5,37 @@ import '../application/note_providers.dart';
 import '../data/models/note.dart';
 import 'note_editor_page.dart';
 import 'note_palette.dart';
+import '../../../navigation/app_section.dart';
+import '../../../navigation/search_query_provider.dart';
 
 class NotesPage extends ConsumerWidget{
   const NotesPage({super.key});
   @override
   Widget build(BuildContext context,WidgetRef ref){
     final notes=ref.watch(notesProvider);
+    final query=ref.watch(searchQueryProvider(AppSection.notes));
     return notes.when(
       loading:()=>const Center(child:CircularProgressIndicator()),
       error:(error,stackTrace)=>_NotesError(message:'Notes could not be loaded.',onRetry:()=>ref.invalidate(notesProvider)),
-      data:(items)=>_NotesContent(notes:items),
+      data:(items)=>_NotesContent(notes:items,query:query),
     );
   }
 }
 
 class _NotesContent extends StatelessWidget{
-  const _NotesContent({required this.notes});
+  const _NotesContent({required this.notes,required this.query});
   final List<Note> notes;
+  final String query;
   @override
   Widget build(BuildContext context){
-    if(notes.isEmpty)return _EmptyNotes(onCreateNote:()=>_openEditor(context));
+    final displayedNotes=_notesForQuery(notes,query);
+    if(displayedNotes.isEmpty)return _EmptyNotes(onCreateNote:()=>_openEditor(context));
     return ListView.separated(
       padding:const EdgeInsets.fromLTRB(20,20,20,140),
-      itemCount:notes.length,
+      itemCount:displayedNotes.length,
       separatorBuilder:(_,index)=>const SizedBox(height:12),
       itemBuilder:(context,index){
-        final note=notes[index];
+        final note=displayedNotes[index];
         return _NoteCard(note:note,onTap:()=>_openEditor(context,note:note));
       },
     );
@@ -38,6 +43,7 @@ class _NotesContent extends StatelessWidget{
   void _openEditor(BuildContext context,{Note? note}){
     Navigator.of(context).push(MaterialPageRoute<void>(builder:(_)=>NoteEditorPage(note:note)));
   }
+  List<Note> _notesForQuery(List<Note> notes,String query)=>notes;
 }
 
 class _EmptyNotes extends StatelessWidget{
