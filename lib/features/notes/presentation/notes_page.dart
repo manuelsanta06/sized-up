@@ -17,7 +17,8 @@ class NotesPage extends ConsumerWidget{
     return notes.when(
       loading:()=>const Center(child:CircularProgressIndicator()),
       error:(error,stackTrace)=>_NotesError(message:'Notes could not be loaded.',onRetry:()=>ref.invalidate(notesProvider)),
-      data:(items)=>_NotesContent(notes:items,query:query),
+      data:(items)=>_NotesContent(notes:items.where(
+        (x)=>x.title.toUpperCase().contains(query.toUpperCase())).toList(),query:query),
     );
   }
 }
@@ -29,7 +30,8 @@ class _NotesContent extends StatelessWidget{
   @override
   Widget build(BuildContext context){
     final displayedNotes=_notesForQuery(notes,query);
-    if(displayedNotes.isEmpty)return _EmptyNotes(onCreateNote:()=>_openEditor(context));
+    if(displayedNotes.isEmpty&&query.isEmpty)return _EmptyNotes(onCreateNote:()=>_openEditor(context));
+    if(displayedNotes.isEmpty)return Text("No matching result");//improve
     return ListView.separated(
       padding:const EdgeInsets.fromLTRB(20,20,20,140),
       itemCount:displayedNotes.length,
