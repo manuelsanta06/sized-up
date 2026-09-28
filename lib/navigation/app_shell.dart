@@ -3,6 +3,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/calendar/presentation/calendar_page.dart';
+import '../features/notes/application/note_providers.dart';
 import '../features/settings/presentation/settings_page.dart';
 import '../features/notes/presentation/note_editor_page.dart';
 import '../features/people/presentation/people_page.dart';
@@ -43,6 +44,14 @@ class _AppShellState extends ConsumerState<AppShell>{
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(noteSelectionProvider,(previous,next){
+      if(next.isNotEmpty&&_isSearchOpen){
+        _searchFocusNode.unfocus();
+        if(mounted)setState(()=>_isSearchOpen=false);
+      }
+    });
+    final selectedNoteIds=ref.watch(noteSelectionProvider);
+    final isNoteSelectionMode=_selectedSection==AppSection.notes&&selectedNoteIds.isNotEmpty;
     return Stack(
       children: [
         Scaffold(
@@ -50,18 +59,20 @@ class _AppShellState extends ConsumerState<AppShell>{
           appBar:AppBar(
             automaticallyImplyLeading:false,
             leading:IconButton(
-              tooltip:_isSearchOpen?'Close search':'Search',
-              onPressed:_isSearchOpen?_closeSearch:_openSearch,
+              tooltip:isNoteSelectionMode?'Clear selection':_isSearchOpen?'Close search':'Search',
+              onPressed:isNoteSelectionMode?_clearNoteSelection:_isSearchOpen?_closeSearch:_openSearch,
               icon:AnimatedSwitcher(
                 duration:const Duration(milliseconds:180),
-                child:Icon(_isSearchOpen?Icons.close:Icons.search,key:ValueKey(_isSearchOpen)),
+                child:Icon(isNoteSelectionMode||_isSearchOpen?Icons.close:Icons.search,key:ValueKey('$isNoteSelectionMode-$_isSearchOpen')),
               ),
             ),
             title:AnimatedSwitcher(
               duration:const Duration(milliseconds:180),
               transitionBuilder:(child,animation)=>FadeTransition(opacity:animation,child:child),
-              child:_isSearchOpen? TextField(
-                key:const ValueKey('search-field'),
+              child:isNoteSelectionMode
+                ? Text('${selectedNoteIds.length} selected',key:const ValueKey('selection-title'))
+                : _isSearchOpen?TextField(
+                    key:const ValueKey('search-field'),
                 controller:_searchController,
                 focusNode:_searchFocusNode,
                 textInputAction:TextInputAction.search,
@@ -72,14 +83,10 @@ class _AppShellState extends ConsumerState<AppShell>{
                   focusedBorder:InputBorder.none,
                 ),
                 onChanged:(query)=>ref.read(searchQueryProvider(_selectedSection).notifier).update(query),
-              ):Text(_selectedSection.title,key:const ValueKey('section-title')),
+                  ):Text(_selectedSection.title,key:const ValueKey('section-title')),
             ),
-            actions:[
-              IconButton(
-                tooltip:'Account and settings',
-                onPressed:_openSettings,
-                icon:const Icon(Icons.account_circle_outlined)
-              ),
+            actions:isNoteSelectionMode?const[]:[
+              IconButton(tooltip:'Account and settings',onPressed:_openSettings,icon:const Icon(Icons.account_circle_outlined)),
               const SizedBox(width:8),
             ],
           ),
@@ -179,6 +186,7 @@ class _AppShellState extends ConsumerState<AppShell>{
       _openQuickActions(section);
       return;
     }
+    if(_selectedSection==AppSection.notes)ref.read(noteSelectionProvider.notifier).clear();
     setState(() {
       _selectedIndex = section.index;
       _isNavigationBarVisible = true;
@@ -187,6 +195,7 @@ class _AppShellState extends ConsumerState<AppShell>{
   }
 
   void _openSettings() {
+    ref.read(noteSelectionProvider.notifier).clear();
     _closeQuickActions();
     Navigator.of(context)
         .push(MaterialPageRoute<void>(builder: (_) => const SettingsPage()));
@@ -236,6 +245,8 @@ class _AppShellState extends ConsumerState<AppShell>{
     _searchFocusNode.unfocus();
     setState(()=>_isSearchOpen=false);
   }
+
+  void _clearNoteSelection()=>ref.read(noteSelectionProvider.notifier).clear();
 
   void _syncSearchQuery(AppSection section){
     if(!_isSearchOpen)return;

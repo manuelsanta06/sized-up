@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:isar/isar.dart';
 
 import '../data/models/note.dart';
 import '../../../core/providers/app_providers.dart';
@@ -10,6 +11,8 @@ final notesProvider = StreamProvider<List<Note>>((ref){
 });
 
 final noteEditorControllerProvider=AsyncNotifierProvider<NoteEditorController,void>(NoteEditorController.new);
+
+final noteSelectionProvider=NotifierProvider<NoteSelectionNotifier,Set<Id>>(NoteSelectionNotifier.new);
 
 class NoteEditorController extends AsyncNotifier<void>{
   @override
@@ -22,4 +25,15 @@ class NoteEditorController extends AsyncNotifier<void>{
     state = result;
     return !result.hasError;
   }
+}
+
+class NoteSelectionNotifier extends Notifier<Set<Id>>{
+  @override
+  Set<Id> build()=>{};
+  void toggle(Id id){
+    final next={...state};
+    if(!next.add(id))next.remove(id);
+    state=next;
+  }
+  void clear()=>state={};
 }

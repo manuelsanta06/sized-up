@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:isar/isar.dart';
 
 import '../application/note_providers.dart';
 import '../data/models/note.dart';
@@ -14,19 +15,26 @@ class NotesPage extends ConsumerWidget{
   Widget build(BuildContext context,WidgetRef ref){
     final notes=ref.watch(notesProvider);
     final query=ref.watch(searchQueryProvider(AppSection.notes));
+    final selectedNoteIds=ref.watch(noteSelectionProvider);
     return notes.when(
       loading:()=>const Center(child:CircularProgressIndicator()),
       error:(error,stackTrace)=>_NotesError(message:'Notes could not be loaded.',onRetry:()=>ref.invalidate(notesProvider)),
-      data:(items)=>_NotesContent(notes:items.where(
-        (x)=>x.title.toUpperCase().contains(query.toUpperCase())).toList(),query:query),
+      data:(items)=>_NotesContent(
+        notes:items.where((x)=>x.title.toUpperCase().contains(query.toUpperCase())).toList(),
+        query:query,
+        selectedNoteIds:selectedNoteIds,
+        onToggleSelection:(id)=>ref.read(noteSelectionProvider.notifier).toggle(id),
+      ),
     );
   }
 }
 
 class _NotesContent extends StatelessWidget{
-  const _NotesContent({required this.notes,required this.query});
+  const _NotesContent({required this.notes,required this.query,required this.selectedNoteIds,required this.onToggleSelection});
   final List<Note> notes;
   final String query;
+  final Set<Id> selectedNoteIds;
+  final ValueChanged<Id> onToggleSelection;
   @override
   Widget build(BuildContext context){
     final displayedNotes=_notesForQuery(notes,query);
@@ -38,7 +46,13 @@ class _NotesContent extends StatelessWidget{
       separatorBuilder:(_,index)=>const SizedBox(height:12),
       itemBuilder:(context,index){
         final note=displayedNotes[index];
-        return _NoteCard(note:note,onTap:()=>_openEditor(context,note:note));
+        return _NoteCard(
+          note:note,
+          selected:selectedNoteIds.contains(note.id),
+          selectionMode:selectedNoteIds.isNotEmpty,
+          onToggleSelection:()=>onToggleSelection(note.id),
+          onTap:()=>_openEditor(context,note:note),
+        );
       },
     );
   }
@@ -75,27 +89,27 @@ class _EmptyNotes extends StatelessWidget{
 }
 
 class _NoteCard extends StatelessWidget{
-  const _NoteCard({required this.note,required this.onTap});
+  const _NoteCard({required this.note,required this.selected,required this.selectionMode,required this.onToggleSelection,required this.onTap});
   final Note note;
+  final bool selected;
+  final bool selectionMode;
+  final VoidCallback onToggleSelection;
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context){
     final colorScheme=Theme.of(context).colorScheme;
     final accentColor=noteColorFromValue(note.colorValue);
     return Card(
-      color:Color.alphaBlend(accentColor.withValues(alpha:.18),colorScheme.surfaceContainerHigh),
+      color:Color.alphaBlend(selected?colorScheme.primary.withValues(alpha:.12):accentColor.withValues(alpha:.18),colorScheme.surfaceContainerHigh),
       clipBehavior:Clip.hardEdge,
       child:ListTile(
-        onTap:onTap,
+        selected:selected,
+        onTap:selectionMode?onToggleSelection:onTap,
+        onLongPress:onToggleSelection,
         contentPadding:const EdgeInsets.symmetric(horizontal:18,vertical:8),
-        leading:Container(
-          width:12,
-          height:48,
-          decoration:BoxDecoration(
-            color:accentColor,
-            borderRadius:BorderRadius.circular(8)
-          )
-        ),
+        leading:selectionMode
+          ? Checkbox(value:selected,onChanged:(_)=>onToggleSelection())
+          : Container(width:12,height:48,decoration:BoxDecoration(color:accentColor,borderRadius:BorderRadius.circular(8))),
         title:Text(note.title),
         subtitle:Padding(
           padding:const EdgeInsets.only(top:4),
@@ -103,7 +117,7 @@ class _NoteCard extends StatelessWidget{
           maxLines:2,
           overflow:TextOverflow.ellipsis)
         ),
-        trailing:const Icon(Icons.chevron_right),
+        trailing:selectionMode?null:const Icon(Icons.chevron_right),
       ),
     );
   }
